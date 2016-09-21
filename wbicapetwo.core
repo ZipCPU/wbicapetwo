@@ -2,12 +2,12 @@ CAPI=1
 [main]
 description = "Wishbone to ICAPE2 interface conversion"
 
-[verilog]
-src_files = rtl/wbicapetwo.v
+[fileset rtl]
+files = rtl/wbicapetwo.v
+file_type = verilogSource
 
 [provider]
 name=github
 user=ZipCPU
 repo=wbicapetwo
 version = master
-cachable = true
