@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
 // Filename:	wbicapetwo.v
 //
@@ -68,9 +68,9 @@
 // Creator:	Dan Gisselquist, Ph.D.
 //		Gisselquist Technology, LLC
 //
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //
-// Copyright (C) 2015, Gisselquist Technology, LLC
+// Copyright (C) 2015-2020, Gisselquist Technology, LLC
 //
 // This program is free software (firmware): you can redistribute it and/or
 // modify it under the terms of  the GNU General Public License as published
@@ -86,7 +86,8 @@
 //		http://www.gnu.org/licenses/gpl.html
 //
 //
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//
 //
 `define	MBOOT_IDLE	5'h00
 `define	MBOOT_START	5'h01
@@ -95,13 +96,13 @@
 `define	MBOOT_DESYNC	5'h11
 module	wbicapetwo(i_clk,
 		i_wb_cyc, i_wb_stb, i_wb_we, i_wb_addr, i_wb_data,
-			o_wb_ack, o_wb_stall, o_wb_data, o_dbg);
+			o_wb_ack, o_wb_stall, o_wb_data);
 	parameter	LGDIV = 3; /// Log of the clock divide
-	input			i_clk;
+	input	wire		i_clk;
 	// Wishbone inputs
-	input			i_wb_cyc, i_wb_stb, i_wb_we;
-	input		[4:0]	i_wb_addr;
-	input		[31:0]	i_wb_data;
+	input	wire		i_wb_cyc, i_wb_stb, i_wb_we;
+	input	wire	[4:0]	i_wb_addr;
+	input	wire	[31:0]	i_wb_data;
 	// Wishbone outputs
 	output	reg		o_wb_ack, o_wb_stall;
 	output	reg	[31:0]	o_wb_data;
@@ -142,10 +143,10 @@ module	wbicapetwo(i_clk,
 			// We'll move on the positive edge of the clock, so therefore
 			// clk_stb must be true one clock before that, so we test for
 			// it one clock before that.
-			clk_stb   <= (slow_clk_counter=={{(LGDIV){1'b1}},1'b0});
+			clk_stb   <= (slow_clk_counter=={{(LGDIV-1){1'b1}},1'b0});
 			// CLK_STALL is set to true two clocks before any cycle that
 			// will, by necessity, stall.
-			clk_stall <= (slow_clk_counter!={{(LGDIV){1'b0}},1'b1});
+			clk_stall <= (slow_clk_counter!={{(LGDIV-1){1'b0}},1'b1});
 		end
 
 		assign	slow_clk = slow_clk_counter[(LGDIV-1)];
@@ -345,7 +346,15 @@ module	wbicapetwo(i_clk,
 		assign cfg_out[24+k] = bit_swapped_cfg_out[24+7-k];
 	end endgenerate
 
+`ifdef	VERILATOR
+	// Verilator lint_off UNUSED
+	wire	[2:0]	unused;
+	assign	unused = { slow_clk, cfg_cs_n, cfg_rdwrn };
+	assign	bit_swapped_cfg_out = bit_swapped_cfg_in;
+	// Verilator lint_on  UNUSED
+`else
 	ICAPE2 #(.ICAP_WIDTH("X32")) reconfig(.CLK(slow_clk),
 			.CSIB(cfg_cs_n), .RDWRB(cfg_rdwrn),
 			.I(bit_swapped_cfg_in), .O(bit_swapped_cfg_out));
+`endif
 endmodule
